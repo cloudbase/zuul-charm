@@ -1,0 +1,11 @@
+name: zuul
+summary: Zuul trunk gating system
+maintainer: Ionut Balutoiu <ibalutoiu@cloudbasesolutions.com>
+description: |
+  Zuul is a pipeline-oriented project gating system. It facilitates running
+  tests and automated tasks in response to Gerrit events.
+tags:
+  - openstack
+provides:
+  zuul:
+    interface: zuul

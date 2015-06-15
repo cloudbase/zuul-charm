@@ -1,0 +1,50 @@
+options:
+  version:
+    type: string
+    default: "2.1.0"
+    description: |
+      Zuul version. This corresponds to a tag from the Zuul github
+      repository (https://github.com/openstack-infra/zuul.git).
+  gearman-port:
+    type: int
+    default: 4730
+    description: "Port used by the Zuul's internal gearman server."
+  git-user-email:
+    type: string
+    default: ""
+    description: "Value to pass to user.email git config."
+  git-user-name:
+    type: string
+    default: ""
+    description: "Value to pass to user.name git config."
+  status-url:
+    type: string
+    default: "https://zuul.openstack.tld/"
+    description: |
+      URL that will be posted in Zuul comments made to Gerrit changes when
+      starting jobs for a change.
+  zuul-url:
+    type: string
+    default: "http://zuul.openstack.tld/p"
+    description: "URL of this merger's git repos, accessible to test workers."
+  username:
+    type: string
+    default: ""
+    description: |
+      The account name on the Gerrit server through which Zuul is able
+      to execute SSH commands.
+  gerrit-server:
+    type: string
+    default: "review.openstack.org"
+    description: "FQDN of the Gerrit server."
+  ssh-key:
+    type: string
+    default: ""
+    description: |
+      Private SSH key to use when logging into Gerrit server.
+  vote-gerrit:
+    type: boolean
+    default: false
+    description: |
+      Depending on this value, the Hyper-V layout.yaml is generated to vote
+      or not for gerrit.

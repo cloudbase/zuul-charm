@@ -1,0 +1,5 @@
+#!/usr/bin/python
+
+from hooks import config_changed
+
+config_changed()
