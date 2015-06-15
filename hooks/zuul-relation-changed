@@ -1,0 +1,5 @@
+#!/usr/bin/python
+
+from hooks import zuul_relation_changed
+
+zuul_relation_changed()
