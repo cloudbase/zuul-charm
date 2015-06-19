@@ -30,6 +30,10 @@ ZUUL_LOG_DIR = '/var/log/zuul'
 GEAR_GIT_URL = 'https://github.com/openstack-infra/gear.git'
 GEAR_STABLE_TAG = '0.5.7'
 
+OPENSTACK_FUNCTIONS_URL = 'https://raw.githubusercontent.com/' \
+            'openstack-infra/project-config/master/zuul/openstack_functions.py'
+OPENSTACK_FUNCTIONS_SHA1 = 'aa270f4b0fef587485ec7a836ce514084dbb01c9'
+
 
 def render_logging_conf():
     logging_conf = os.path.join(ZUUL_CONF_DIR, 'logging.conf')
@@ -79,6 +83,18 @@ def render_hyper_v_layout():
         layout_template += '.nonvote'
     layout_conf = os.path.join(ZUUL_CONF_DIR, 'layout.yaml')
     render(layout_template, layout_conf, { }, ZUUL_USER, ZUUL_USER)
+
+
+def download_openstack_functions():
+    url_handler = archiveurl.ArchiveUrlFetchHandler()
+    temp_path = url_handler.download_and_validate(OPENSTACK_FUNCTIONS_URL,
+                                                  OPENSTACK_FUNCTIONS_SHA1)
+    openstack_functions_path = os.path.join(ZUUL_CONF_DIR,
+                                            'openstack_functions.py')
+    shutil.move(temp_path, openstack_functions_path)
+    zuul_user = pwd.getpwnam(ZUUL_USER)
+    os.chown(openstack_functions_path, zuul_user.pw_uid, zuul_user.pw_gid)
+    os.chmod(openstack_functions_path, 0644)
 
 
 def create_zuul_upstart_services():
@@ -184,6 +200,7 @@ def install():
     render_hyper_v_layout()
     render_zuul_conf()
     create_zuul_upstart_services()
+    download_openstack_functions()
 
 
 def config_changed():
@@ -207,5 +224,11 @@ def stop():
 
 
 def zuul_relation_changed():
+    gearman_port = config('gearman-port')
     relation_set(gearman_ip=unit_get('public-address'),
-                 gearman_port=config('gearman-port'))
+                 gearman_port=gearman_port)
+    open_port(gearman_port)
+
+
+def zuul_relation_broken():
+    open_port(config('gearman-port'))
