@@ -8,13 +8,13 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.environ['CHARM_DIR'], 'lib'))
 
-from charmhelpers.core.hookenv import charm_dir, config, log, relation_set
+from charmhelpers.core.hookenv import charm_dir, config, log, relation_set, open_port, close_port
 from charmhelpers.core.templating import render
 from charmhelpers.fetch import giturl, apt_install, apt_update, archiveurl
 from charmhelpers.core.host import service_restart, service_start, service_stop
 
 
-PACKAGES = [ 'git', 'python-setuptools', 'python-dev', 'python-pip' ]
+PACKAGES = [ 'git', 'python-setuptools', 'python-dev', 'python-pip', 'apache2' ]
 
 ZUUL_GIT_URL = 'https://github.com/openstack-infra/zuul.git'
 ZUUL_USER = 'zuul'
@@ -26,6 +26,8 @@ ZUUL_MERGER_RUN_DIR = '/var/run/zuul-merger'
 ZUUL_STATE_DIR = '/var/lib/zuul'
 ZUUL_GIT_DIR = '/var/lib/zuul/git'
 ZUUL_LOG_DIR = '/var/log/zuul'
+
+APACHE2_CONF_DIR = '/etc/apache2'
 
 GEAR_GIT_URL = 'https://github.com/openstack-infra/gear.git'
 GEAR_STABLE_TAG = '0.5.7'
@@ -83,6 +85,14 @@ def render_hyper_v_layout():
         layout_template += '.nonvote'
     layout_conf = os.path.join(ZUUL_CONF_DIR, 'layout.yaml')
     render(layout_template, layout_conf, { }, ZUUL_USER, ZUUL_USER)
+
+
+def render_zuul_vhost_conf():
+    context = {
+        'git_dir': ZUUL_GIT_DIR
+    }
+    zuul_vhost = os.path.join(APACHE2_CONF_DIR, 'sites-available/zuul.conf')
+    render('apache2-vhost.conf', zuul_vhost, context, perms=0o644)
 
 
 def download_openstack_functions():
@@ -168,6 +178,22 @@ def update_zuul_conf():
     return services_restart
 
 
+def configure_apache2():
+    render_zuul_vhost_conf()
+
+    # required apache2 modules
+    subprocess.check_call(["a2enmod", "cgi"])
+    subprocess.check_call(["a2enmod", "rewrite"])
+
+    # disable default website
+    subprocess.check_call(["a2dissite", "000-default"])
+
+    # enable zuul website
+    subprocess.check_call(["a2ensite", 'zuul'])
+
+    service_restart('apache2')
+
+
 # HOOKS METHODS
 
 def install():
@@ -181,7 +207,7 @@ def install():
         pwd.getpwnam(ZUUL_USER)
     except KeyError:
         # create Zuul user
-        subprocess.call(["useradd", "--create-home", ZUUL_USER])
+        subprocess.check_call(["useradd", "--create-home", ZUUL_USER])
 
     directories = [ ZUUL_CONF_DIR, ZUUL_SSH_DIR, ZUUL_RUN_DIR, ZUUL_STATE_DIR,
                     ZUUL_GIT_DIR, ZUUL_LOG_DIR, ZUUL_MERGER_RUN_DIR ]
@@ -201,6 +227,8 @@ def install():
     render_zuul_conf()
     create_zuul_upstart_services()
     download_openstack_functions()
+
+    configure_apache2()
 
 
 def config_changed():
@@ -231,4 +259,4 @@ def zuul_relation_changed():
 
 
 def zuul_relation_broken():
-    open_port(config('gearman-port'))
+    close_port(config('gearman-port'))
