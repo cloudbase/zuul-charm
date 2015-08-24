@@ -34,7 +34,6 @@ GEAR_STABLE_TAG = '0.5.7'
 
 OPENSTACK_FUNCTIONS_URL = 'https://raw.githubusercontent.com/' \
             'openstack-infra/project-config/master/zuul/openstack_functions.py'
-OPENSTACK_FUNCTIONS_SHA1 = 'aa270f4b0fef587485ec7a836ce514084dbb01c9'
 
 
 def render_logging_conf():
@@ -97,11 +96,9 @@ def render_zuul_vhost_conf():
 
 def download_openstack_functions():
     url_handler = archiveurl.ArchiveUrlFetchHandler()
-    temp_path = url_handler.download_and_validate(OPENSTACK_FUNCTIONS_URL,
-                                                  OPENSTACK_FUNCTIONS_SHA1)
     openstack_functions_path = os.path.join(ZUUL_CONF_DIR,
                                             'openstack_functions.py')
-    shutil.move(temp_path, openstack_functions_path)
+    url_handler.download(OPENSTACK_FUNCTIONS_URL, openstack_functions_path)
     zuul_user = pwd.getpwnam(ZUUL_USER)
     os.chown(openstack_functions_path, zuul_user.pw_uid, zuul_user.pw_gid)
     os.chmod(openstack_functions_path, 0644)
