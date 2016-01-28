@@ -119,9 +119,10 @@ def create_zuul_upstart_services():
         'zuul_conf': zuul_conf,
         'zuul_user': ZUUL_USER
     }
-    render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
+    if is_service_enabled("server"):
+        render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
+        context.pop('zuul_server_bin')
 
-    context.pop('zuul_server_bin')
     if is_service_enabled("merger"):
         context.update({'zuul_merger_bin': zuul_merger_bin})
         render('upstart/zuul-merger.conf', zuul_merger, context, perms=0o644)
@@ -240,21 +241,24 @@ def is_service_enabled(service):
 def config_changed():
     if update_zuul_conf():
         # zuul.conf was updated and Zuul services must be restarted
-        service_restart('zuul-server')
+        if is_service_enabled("server"):
+            service_restart('zuul-server')
         if is_service_enabled("merger"):
             service_restart('zuul-merger')
         log('Zuul services restarted')
 
 
 def start():
-    service_start('zuul-server')
+    if is_service_enabled("server"):
+        service_start('zuul-server')
     if is_service_enabled("merger"):
         service_start('zuul-merger')
     log('Zuul services started.')
 
 
 def stop():
-    service_stop('zuul-server')
+    if is_service_enabled("server"):
+        service_stop('zuul-server')
     if is_service_enabled("merger"):
         service_stop('zuul-merger')
     log('Zuul services stopped.')
