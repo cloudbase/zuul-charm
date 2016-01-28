@@ -9,6 +9,14 @@ options:
     type: int
     default: 4730
     description: "Port used by the Zuul's internal gearman server."
+  services:
+    type: string
+    default: "gearman,server,merger"
+    description: "Services to start"
+  gearman-server:
+    type: string
+    default: "0.0.0.0"
+    description: "The IP address for the gearman server"
   git-user-email:
     type: string
     default: ""

@@ -52,10 +52,13 @@ def render_gearman_logging_conf():
 
 
 def render_zuul_conf():
+    gearman_start = "false"
+    if is_service_enabled("gearman"):
+        gearman_start = "true"
     context = {
-        'gearman_host': '0.0.0.0',
+        'gearman_host': config('gearman-server'),
         'gearman_port': config('gearman-port'),
-        'gearman_internal': 'true',
+        'gearman_internal': gearman_start,
         'gearman_log': os.path.join(ZUUL_CONF_DIR, 'gearman-logging.conf'),
         'gerrit_server': config('gerrit-server'),
         'gerrit_port': '29418',
@@ -119,8 +122,9 @@ def create_zuul_upstart_services():
     render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
 
     context.pop('zuul_server_bin')
-    context.update({'zuul_merger_bin': zuul_merger_bin})
-    render('upstart/zuul-merger.conf', zuul_merger, context, perms=0o644)
+    if is_service_enabled("merger"):
+        context.update({'zuul_merger_bin': zuul_merger_bin})
+        render('upstart/zuul-merger.conf', zuul_merger, context, perms=0o644)
 
 
 def install_from_git(repository_url, tag):
@@ -228,23 +232,30 @@ def install():
     configure_apache2()
 
 
+def is_service_enabled(service):
+    return service in [i.strip() for i in config('services').split(',')]
+    
+
 def config_changed():
     if update_zuul_conf():
         # zuul.conf was updated and Zuul services must be restarted
         service_restart('zuul-server')
-        service_restart('zuul-merger')
+        if is_service_enabled("merger"):
+            service_restart('zuul-merger')
         log('Zuul services restarted')
 
 
 def start():
     service_start('zuul-server')
-    service_start('zuul-merger')
+    if is_service_enabled("merger"):
+        service_start('zuul-merger')
     log('Zuul services started.')
 
 
 def stop():
     service_stop('zuul-server')
-    service_stop('zuul-merger')
+    if is_service_enabled("merger"):
+        service_stop('zuul-merger')
     log('Zuul services stopped.')
 
 
