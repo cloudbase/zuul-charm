@@ -164,7 +164,8 @@ def update_zuul_conf():
         services_restart = True
 
     configs_keys = ['gearman-port', 'gerrit-server', 'username', 'zuul-url',
-                    'status-url', 'git-user-name', 'git-user-email' ]
+                    'status-url', 'git-user-name', 'git-user-email', 
+                    'services', 'gearman-server' ]
     for key in configs_keys:
         if configs.changed(key):
             services_restart = True
