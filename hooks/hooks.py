@@ -119,9 +119,11 @@ def create_zuul_upstart_services():
         'zuul_conf': zuul_conf,
         'zuul_user': ZUUL_USER
     }
+
     if is_service_enabled("server"):
         render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
-        context.pop('zuul_server_bin')
+
+    context.pop('zuul_server_bin')
 
     if is_service_enabled("merger"):
         context.update({'zuul_merger_bin': zuul_merger_bin})
