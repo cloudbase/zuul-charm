@@ -82,7 +82,7 @@ def render_zuul_conf():
 def render_layout():
     if is_service_enabled("server"):
         layout_template = 'layout_standard.yaml'
-    else is_service_enabled("gearman")::
+    elif is_service_enabled("gearman"):
         layout_template = 'layout_gearman.yaml'
     else:
         layout_template = ''
