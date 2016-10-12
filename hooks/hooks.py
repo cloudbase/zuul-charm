@@ -30,7 +30,7 @@ ZUUL_LOG_DIR = '/var/log/zuul'
 APACHE2_CONF_DIR = '/etc/apache2'
 
 GEAR_GIT_URL = 'https://github.com/openstack-infra/gear.git'
-GEAR_STABLE_TAG = '0.5.7'
+GEAR_STABLE_TAG = '0.7.0'
 
 OPENSTACK_FUNCTIONS_URL = 'https://raw.githubusercontent.com/' \
             'openstack-infra/project-config/master/zuul/openstack_functions.py'
