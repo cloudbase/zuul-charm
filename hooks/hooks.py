@@ -201,8 +201,9 @@ def configure_apache2():
 # HOOKS METHODS
 
 def install():
-    apt_update(fatal=True)
-    apt_install(PACKAGES, fatal=True)
+    subprocess.check_call(['apt-key', 'update'])
+    subprocess.check_call(['apt-get', 'update'])
+    subprocess.check_call(['apt-get', 'install', '-y'] + PACKAGES)
 
     install_from_git(ZUUL_GIT_URL, config('version'))
     install_from_git(GEAR_GIT_URL, GEAR_STABLE_TAG)
