@@ -123,7 +123,7 @@ def create_zuul_upstart_services():
         'zuul_user': ZUUL_USER
     }
 
-    if is_service_enabled("server"):
+    if is_service_enabled("server") or is_service_enabled("gearman"):
         render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
 
     context.pop('zuul_server_bin')
@@ -242,7 +242,7 @@ def is_service_enabled(service):
 def config_changed():
     if update_zuul_conf():
         # zuul.conf was updated and Zuul services must be restarted
-        if is_service_enabled("server"):
+        if is_service_enabled("server") or is_service_enabled("gearman"):
             service_restart('zuul-server')
         if is_service_enabled("merger"):
             service_restart('zuul-merger')
@@ -250,7 +250,7 @@ def config_changed():
 
 
 def start():
-    if is_service_enabled("server"):
+    if is_service_enabled("server") or is_service_enabled("gearman"):
         service_start('zuul-server')
     if is_service_enabled("merger"):
         service_start('zuul-merger')
@@ -258,7 +258,7 @@ def start():
 
 
 def stop():
-    if is_service_enabled("server"):
+    if is_service_enabled("server") or is_service_enabled("gearman"):
         service_stop('zuul-server')
     if is_service_enabled("merger"):
         service_stop('zuul-merger')
