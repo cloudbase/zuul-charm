@@ -79,14 +79,17 @@ def render_zuul_conf():
     render('zuul.conf', zuul_conf, context, ZUUL_USER, ZUUL_USER)
 
 
-def render_hyper_v_layout():
-    layout_template = 'hyper-v/layout.yaml'
-    if (config('vote-gerrit')):
-        layout_template += '.vote'
+def render_layout():
+    if is_service_enabled("server"):
+        layout_template = 'layout_standard.yaml'
+    else is_service_enabled("gearman")::
+        layout_template = 'layout_gearman.yaml'
     else:
-        layout_template += '.nonvote'
-    layout_conf = os.path.join(ZUUL_CONF_DIR, 'layout.yaml')
-    render(layout_template, layout_conf, { }, ZUUL_USER, ZUUL_USER)
+        layout_template = ''
+
+    if layout_template:
+        layout_conf = os.path.join(ZUUL_CONF_DIR, 'layout.yaml')
+        render(layout_template, layout_conf, { }, ZUUL_USER, ZUUL_USER)
 
 
 def render_zuul_vhost_conf():
@@ -162,10 +165,6 @@ def update_zuul_conf():
     if configs.changed('ssh-key'):
         generate_zuul_ssh_key()
 
-    if configs.changed('vote-gerrit'):
-        render_hyper_v_layout()
-        services_restart = True
-
     configs_keys = ['gearman-port', 'gerrit-server', 'username', 'zuul-url',
                     'status-url', 'git-user-name', 'git-user-email', 
                     'services', 'gearman-server' ]
@@ -228,7 +227,7 @@ def install():
     # generate configuration files
     render_logging_conf()
     render_gearman_logging_conf()
-    render_hyper_v_layout()
+    render_layout()
     render_zuul_conf()
     create_zuul_upstart_services()
     download_openstack_functions()

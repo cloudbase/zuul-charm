@@ -1,0 +1,47 @@
+includes:
+  - python-file: openstack_functions.py
+
+pipelines:
+  - name: check
+    description: Newly uploaded patchsets enter this pipeline to be validated. Voting is neutral, only comments with results are sent.
+    failure-message: "For rechecking only on the Microsoft Hyper-V CI, add a review comment with check hyper-v"
+    manager: IndependentPipelineManager
+    precedence: low
+    trigger:
+      gerrit:
+        - event: patchset-created
+        - event: change-restored
+        - event: comment-added
+          comment_filter: (?i)^(Patch Set [0-9]+:)?( [\w\\+-]*)*(\n\n)?\s*(recheck|reverify|check hyper-v)
+    dequeue-on-new-patchset: true
+    success:
+      gerrit:
+        verified: 1
+    failure:
+      gerrit:
+        verified: 0
+    merge-failure:
+      smtp:
+        to: hyper-v_ci@microsoft.com
+        from: zuul@zuul.openstack.tld
+        subject: Upstream change {change} has a merge failure
+
+jobs:
+  - name: ^.*$
+    parameter-function: set_log_url
+#  - name: nova-dvsm-full-tempest
+#    voting: true
+#    success-pattern: "nova-dvsm-full-tempest http://64.119.130.115/nova/{build.parameters[ZUUL_CHANGE]}/{build.parameters[ZUUL_PATCHSET]}/"
+#    failure-pattern: "nova-dvsm-full-tempest http://64.119.130.115/nova/{build.parameters[ZUUL_CHANGE]}/{build.parameters[ZUUL_PATCHSET]}/"
+#  - name: neutron-dvsm-full-tempest
+#    voting: true
+#    success-pattern: "neutron-dvsm-tempest http://64.119.130.115/neutron/{build.parameters[ZUUL_CHANGE]}/{build.parameters[ZUUL_PATCHSET]}/"
+#    failure-pattern: "neutron-dvsm-tempest http://64.119.130.115/neutron/{build.parameters[ZUUL_CHANGE]}/{build.parameters[ZUUL_PATCHSET]}/"
+
+projects:
+#  - name: openstack/nova
+#    check:
+#      - nova-dvsm-full-tempest
+#  - name: openstack/neutron
+#    check:
+#      - neutron-dvsm-full-tempest

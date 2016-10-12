@@ -50,9 +50,3 @@ options:
     default: ""
     description: |
       Private SSH key to use when logging into Gerrit server.
-  vote-gerrit:
-    type: boolean
-    default: false
-    description: |
-      Depending on this value, the Hyper-V layout.yaml is generated to vote
-      or not for gerrit.
