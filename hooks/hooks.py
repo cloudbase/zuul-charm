@@ -71,6 +71,9 @@ def render_zuul_conf():
         'zuul_status_url': config('status-url'),
         'zuul_git_dir': ZUUL_GIT_DIR,
         'zuul_url': config('zuul-url'),
+        'zuul_smtp_server': config('zuul-smtp-server'),
+        'zuul_smtp_from': config('zuul-smtp-from'),
+        'zuul_smtp_to': config('zuul-smtp-to'),
         'merger_git_user_email': config('git-user-email'),
         'merger_git_user_name': config('git-user-name'),
         'merger_pidfile': os.path.join(ZUUL_MERGER_RUN_DIR, 'merger.pid')

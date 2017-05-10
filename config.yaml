@@ -31,6 +31,18 @@ options:
     description: |
       URL that will be posted in Zuul comments made to Gerrit changes when
       starting jobs for a change.
+  zuul-smtp-server:
+    type: string
+    default: "localhost"
+    description: "Smtp server host"
+  zuul-smtp-to:
+    type: string
+    default: "destination@example.com"
+    description: "Destination mail address" 
+  zuul-smtp-from:
+    type: string
+    default: "source@example.com"
+    description: "Source mail address"
   zuul-url:
     type: string
     default: "http://zuul.openstack.tld/p"
