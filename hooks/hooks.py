@@ -30,7 +30,7 @@ ZUUL_LOG_DIR = '/var/log/zuul'
 APACHE2_CONF_DIR = '/etc/apache2'
 
 GEAR_GIT_URL = 'https://github.com/openstack-infra/gear.git'
-GEAR_STABLE_TAG = '0.5.7'
+GEAR_STABLE_TAG = '0.7.0'
 
 OPENSTACK_FUNCTIONS_URL = 'https://raw.githubusercontent.com/' \
             'openstack-infra/project-config/master/zuul/openstack_functions.py'
@@ -52,10 +52,13 @@ def render_gearman_logging_conf():
 
 
 def render_zuul_conf():
+    gearman_start = "false"
+    if is_service_enabled("gearman"):
+        gearman_start = "true"
     context = {
-        'gearman_host': '0.0.0.0',
+        'gearman_host': config('gearman-server'),
         'gearman_port': config('gearman-port'),
-        'gearman_internal': 'true',
+        'gearman_internal': gearman_start,
         'gearman_log': os.path.join(ZUUL_CONF_DIR, 'gearman-logging.conf'),
         'gerrit_server': config('gerrit-server'),
         'gerrit_port': '29418',
@@ -68,6 +71,9 @@ def render_zuul_conf():
         'zuul_status_url': config('status-url'),
         'zuul_git_dir': ZUUL_GIT_DIR,
         'zuul_url': config('zuul-url'),
+        'zuul_smtp_server': config('zuul-smtp-server'),
+        'zuul_smtp_from': config('zuul-smtp-from'),
+        'zuul_smtp_to': config('zuul-smtp-to'),
         'merger_git_user_email': config('git-user-email'),
         'merger_git_user_name': config('git-user-name'),
         'merger_pidfile': os.path.join(ZUUL_MERGER_RUN_DIR, 'merger.pid')
@@ -76,14 +82,17 @@ def render_zuul_conf():
     render('zuul.conf', zuul_conf, context, ZUUL_USER, ZUUL_USER)
 
 
-def render_hyper_v_layout():
-    layout_template = 'hyper-v/layout.yaml'
-    if (config('vote-gerrit')):
-        layout_template += '.vote'
+def render_layout():
+    if is_service_enabled("server"):
+        layout_template = 'layout_standard.yaml'
+    elif is_service_enabled("gearman"):
+        layout_template = 'layout_gearman.yaml'
     else:
-        layout_template += '.nonvote'
-    layout_conf = os.path.join(ZUUL_CONF_DIR, 'layout.yaml')
-    render(layout_template, layout_conf, { }, ZUUL_USER, ZUUL_USER)
+        layout_template = ''
+
+    if layout_template:
+        layout_conf = os.path.join(ZUUL_CONF_DIR, 'layout.yaml')
+        render(layout_template, layout_conf, { }, ZUUL_USER, ZUUL_USER)
 
 
 def render_zuul_vhost_conf():
@@ -116,11 +125,15 @@ def create_zuul_upstart_services():
         'zuul_conf': zuul_conf,
         'zuul_user': ZUUL_USER
     }
-    render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
+
+    if is_service_enabled("server") or is_service_enabled("gearman"):
+        render('upstart/zuul-server.conf', zuul_server, context, perms=0o644)
 
     context.pop('zuul_server_bin')
-    context.update({'zuul_merger_bin': zuul_merger_bin})
-    render('upstart/zuul-merger.conf', zuul_merger, context, perms=0o644)
+
+    if is_service_enabled("merger"):
+        context.update({'zuul_merger_bin': zuul_merger_bin})
+        render('upstart/zuul-merger.conf', zuul_merger, context, perms=0o644)
 
 
 def install_from_git(repository_url, tag):
@@ -155,12 +168,9 @@ def update_zuul_conf():
     if configs.changed('ssh-key'):
         generate_zuul_ssh_key()
 
-    if configs.changed('vote-gerrit'):
-        render_hyper_v_layout()
-        services_restart = True
-
     configs_keys = ['gearman-port', 'gerrit-server', 'username', 'zuul-url',
-                    'status-url', 'git-user-name', 'git-user-email' ]
+                    'status-url', 'git-user-name', 'git-user-email', 
+                    'services', 'gearman-server' ]
     for key in configs_keys:
         if configs.changed(key):
             services_restart = True
@@ -194,8 +204,7 @@ def configure_apache2():
 # HOOKS METHODS
 
 def install():
-    apt_update(fatal=True)
-    apt_install(PACKAGES, fatal=True)
+    subprocess.check_call(['apt-get', 'install', '-y'] + PACKAGES)
 
     install_from_git(ZUUL_GIT_URL, config('version'))
     install_from_git(GEAR_GIT_URL, GEAR_STABLE_TAG)
@@ -220,7 +229,7 @@ def install():
     # generate configuration files
     render_logging_conf()
     render_gearman_logging_conf()
-    render_hyper_v_layout()
+    render_layout()
     render_zuul_conf()
     create_zuul_upstart_services()
     download_openstack_functions()
@@ -228,23 +237,33 @@ def install():
     configure_apache2()
 
 
+def is_service_enabled(service):
+    return service in [i.strip() for i in config('services').split(',')]
+    
+
 def config_changed():
     if update_zuul_conf():
         # zuul.conf was updated and Zuul services must be restarted
-        service_restart('zuul-server')
-        service_restart('zuul-merger')
+        if is_service_enabled("server") or is_service_enabled("gearman"):
+            service_restart('zuul-server')
+        if is_service_enabled("merger"):
+            service_restart('zuul-merger')
         log('Zuul services restarted')
 
 
 def start():
-    service_start('zuul-server')
-    service_start('zuul-merger')
+    if is_service_enabled("server") or is_service_enabled("gearman"):
+        service_start('zuul-server')
+    if is_service_enabled("merger"):
+        service_start('zuul-merger')
     log('Zuul services started.')
 
 
 def stop():
-    service_stop('zuul-server')
-    service_stop('zuul-merger')
+    if is_service_enabled("server") or is_service_enabled("gearman"):
+        service_stop('zuul-server')
+    if is_service_enabled("merger"):
+        service_stop('zuul-merger')
     log('Zuul services stopped.')
 
 

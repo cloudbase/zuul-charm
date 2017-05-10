@@ -9,24 +9,19 @@ pipelines:
     precedence: low
     trigger:
       gerrit:
-        - event: patchset-created
-        - event: change-restored
         - event: comment-added
-          comment_filter: (?i)^(Patch Set [0-9]+:)?( [\w\\+-]*)*(\n\n)?\s*(recheck|reverify|check hyper-v)
+          comment_filter: (?i)^(Patch Set [0-9]+:)?( [\w\\+-]*)*(\n\n)?\s*(check hyper-v)
     dequeue-on-new-patchset: true
 
 jobs:
   - name: ^.*$
     parameter-function: set_log_url
-  - name: 01_Reserve_Hyper-V_Node_01
-    voting: false
-  - name: gate-noop
+  - name: noop
     voting: false
 
+
 projects:
-  - name: openstack/nova
+  - name: openstack-dev/ci-sandbox
     check:
-      - 01_Reserve_Hyper-V_Node_01
-  - name: openstack/neutron
-    check:
-      - 01_Reserve_Hyper-V_Node_01
+      - noop
+

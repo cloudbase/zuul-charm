@@ -28,7 +28,8 @@ if six.PY3:
 try:
     from git import Repo
 except ImportError:
-    from charmhelpers.fetch import apt_install
+    from charmhelpers.fetch import apt_install, apt_update
+    apt_update()
     apt_install("python-git")
     from git import Repo
 
